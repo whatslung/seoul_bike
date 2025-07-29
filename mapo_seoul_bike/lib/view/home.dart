@@ -13,7 +13,7 @@ class Home extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(80), // 원하는 높이 지정 (ex: 80)
+        preferredSize: Size.fromHeight(70), // 원하는 높이 지정 (ex: 80)
         child: AppBar(
           title: Appbartitle(),
           actions: [
@@ -60,7 +60,7 @@ class Home extends StatelessWidget {
                 ),
                 color: Color(0xff30E291)
               ),
-              height: MediaQuery.of(context).size.height * 0.7,
+              height: MediaQuery.of(context).size.height * 0.5,
               
             ),
           ),
@@ -94,17 +94,24 @@ class Home extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: 10),
-                Center(child: MainMap()),
+                Center(
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.8,
+                    height: 400,
+                    child: MainMap())),
               ],
             ),
           ),
+          SizedBox(
+            height: 50,
+          )
         ],
       ),
     );
-  } // build 닫힘
+  } // build
 
   //---functions---
-} // clas
+} // class
 
 //반응형 필요시 사용
 // ResponsiveVisibility(

@@ -38,10 +38,21 @@ dependencies:
   # Http
   http: ^1.4.0
 
-  #GetX
+  # GetX
   get: ^4.7.2
+
+  # 위치정보
+  geocoding: ^4.0.0
+  # 지도 
+  geolocator: ^14.0.2
+
+  # Flutter Map 지도
+  flutter_map: ^8.2.1
   
-  #Responsive Framework
+    # 지도를 현위치로옮기기
+  latlong2: ^0.9.1
+  
+  # Responsive Framework
   responsive_framework: ^1.5.1
 
 dev_dependencies:
