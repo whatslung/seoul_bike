@@ -37,7 +37,7 @@ dependencies:
 
   # Http
   http: ^1.4.0
-
+  
   # GetX
   get: ^4.7.2
 

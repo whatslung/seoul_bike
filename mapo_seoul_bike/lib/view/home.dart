@@ -3,6 +3,7 @@ import 'package:mapo_seoul_bike/components/appbar_title.dart';
 import 'package:mapo_seoul_bike/components/main_map.dart';
 import 'package:mapo_seoul_bike/components/station_info.dart';
 import 'package:mapo_seoul_bike/components/weather_info.dart';
+import 'package:mapo_seoul_bike/model/weather_model.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 
 class Home extends StatelessWidget {
@@ -10,6 +11,7 @@ class Home extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+     // fetchWeatherData(); // 임시로 주석 처리
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: PreferredSize(
@@ -54,13 +56,9 @@ class Home extends StatelessWidget {
             alignment: Alignment.topCenter,
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(40),
-                  topRight: Radius.circular(40),
-                ),
                 color: Color(0xff30E291)
               ),
-              height: MediaQuery.of(context).size.height * 0.5,
+              height: MediaQuery.of(context).size.height * 0.8,
               
             ),
           ),
@@ -80,14 +78,14 @@ class Home extends StatelessWidget {
                       rowFlex: 1,
                       child:
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 40),
+                            padding: const EdgeInsets.symmetric(horizontal: 30),
                             child: WeatherInfo(),
                           ), //model에서 가져올 정보있으면 가져오기 예 (child: CourseTile(course: courses[0]))
                     ),
                     ResponsiveRowColumnItem(
                       rowFlex: 1, 
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 40),
+                        padding: const EdgeInsets.symmetric(horizontal: 30),
                         child: StationInfo(),
                       )
                     ),
@@ -97,14 +95,19 @@ class Home extends StatelessWidget {
                 Center(
                   child: SizedBox(
                     width: MediaQuery.of(context).size.width * 0.8,
-                    height: 400,
-                    child: MainMap())),
-              ],
+                    height: 800,
+                    child: MainMap()
+                    )
+                ),
+                Container(      //지도 밑 공간
+                height: 300,
+                alignment: Alignment.center,
+              ),
+            ],
+          
             ),
           ),
-          SizedBox(
-            height: 50,
-          )
+          
         ],
       ),
     );
