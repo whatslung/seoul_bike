@@ -38,7 +38,6 @@ class _MainMapState extends State<MainMap> {
       children: [
         TileLayer(
           urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-          userAgentPackageName: 'aaa',
         ),
         MarkerLayer(
           markers: location.isNotEmpty

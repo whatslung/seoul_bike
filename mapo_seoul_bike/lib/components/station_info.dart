@@ -7,7 +7,7 @@ class StationInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     return
       Container(
-        width: 300,
+        width: 400,
               height: 300,
               color: Colors.white,
     );
