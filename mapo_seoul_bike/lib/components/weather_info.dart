@@ -1,9 +1,8 @@
-import 'dart:convert';                    // JSON 데이터를 읽기 위해 필요
-import 'package:flutter/material.dart';   // Flutter UI를 만들기 위해 필요
-import 'package:http/http.dart' as http;  // 인터넷에서 데이터를 가져오기 위해 필요
-import '../model/weather_model.dart';     // 위에서 만든 날씨 상자를 사용하기 위해
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import '../model/weather_model.dart';
 
-// 날씨 정보를 보여주는 화면을 만드는 클래스
 class WeatherInfo extends StatefulWidget {
   const WeatherInfo({Key? key}) : super(key: key);
 
@@ -12,405 +11,355 @@ class WeatherInfo extends StatefulWidget {
 }
 
 class _WeatherInfoState extends State<WeatherInfo> {
-  
-  final String myApiKey = '';
-  
-  // 마포구 좌표 (기상청에서 정해놓은 숫자)
+  final String apiKey = '';  // API 키 입력
   final String mapoPosX = '59';   // 마포구 X 좌표
   final String mapoPosY = '125';  // 마포구 Y 좌표
   
-  // ============ 화면에서 사용할 변수들 ============
-  
-  WeatherModel? todayWeather;     // 오늘 날씨 정보를 담을 상자 (처음엔 비어있음)
-  bool isDataLoading = true;      // 지금 데이터를 불러오고 있는지 확인 (처음엔 true)
-  String? errorText;              // 오류가 생겼을 때 보여줄 메시지 (처음엔 null)
+  WeatherModel? weather;  // 날씨 정보
+  bool loading = true;    // 로딩 상태
+  String? error;          // 오류 메시지
 
-  // ============ 화면이 시작될 때 실행되는 함수 (수정됨) ============
   @override
   void initState() {
     super.initState();
-    
-    // WidgetsBinding 대신 Future.microtask 사용 (더 간단함)
-    Future.microtask(() {
-      getWeatherFromInternet(); // 인터넷에서 날씨 가져오는 함수 실행
-    });
+    // 가장 간단한 방법: 바로 호출
+    loadWeatherData();
   }
 
-  // ============ 인터넷에서 날씨 데이터 가져오는 함수 ============
-  Future<void> getWeatherFromInternet() async {
-    
-    // 안전하게 로딩 상태 시작 (setState 오류 방지)
+  // 날씨 데이터 가져오기
+  Future<void> loadWeatherData() async {
     try {
       setState(() {
-        isDataLoading = true;    // 로딩 스피너 보여주기
-        errorText = null;        // 이전 오류 메시지 지우기
+        loading = true;
+        error = null;
       });
     } catch (e) {
-      // 위젯이 사라졌으면 그냥 종료 (오류 방지)
-      print('위젯이 이미 사라져서 로딩 상태 업데이트 불가');
       return;
     }
 
     try {
-      // 오늘 날짜와 시간 계산하기
-      DateTime nowTime = DateTime.now();           // 지금 시간
-      String todayDate = makeDateString(nowTime);  // 오늘 날짜를 문자로 (예: "20250730")
-      String baseTime = getBaseTimeString(nowTime); // 기상청 발표 시간 (예: "1700")
+      DateTime now = DateTime.now();
+      String date = getDateString(now);
+      String baseTime = getBaseTime(now);
       
-      print('요청할 날짜: $todayDate');
-      print('요청할 시간: $baseTime');
-
-      // 기상청에 요청할 인터넷 주소 만들기
-      Uri requestUrl = Uri.https(
-        'apis.data.go.kr',    // 기상청 서버 주소
-        '/1360000/VilageFcstInfoService_2.0/getVilageFcst',  // 날씨 정보 요청 경로
+      // API 요청 URL 생성
+      Uri url = Uri.https(
+        'apis.data.go.kr',
+        '/1360000/VilageFcstInfoService_2.0/getVilageFcst',
         {
-          'serviceKey': myApiKey,        // 내 API 열쇠
-          'pageNo': '1',                 // 첫 번째 페이지
-          'numOfRows': '300',            // 최대 300개 데이터
-          'dataType': 'JSON',            // JSON 형식으로 달라고 요청
-          'base_date': todayDate,        // 기준 날짜
-          'base_time': baseTime,         // 기준 시간
-          'nx': mapoPosX,                // 마포구 X 좌표
-          'ny': mapoPosY,                // 마포구 Y 좌표
+          'serviceKey': apiKey,
+          'pageNo': '1',
+          'numOfRows': '300',
+          'dataType': 'JSON',
+          'base_date': date,
+          'base_time': baseTime,
+          'nx': mapoPosX,
+          'ny': mapoPosY,
         }
       );
       
-      print('요청 주소: $requestUrl');
-
-      // 실제로 인터넷에 요청하기 (최대 20초 대기)
-      var serverResponse = await http.get(requestUrl).timeout(
-        Duration(seconds: 20)
-      );
+      // API 호출
+      var response = await http.get(url).timeout(Duration(seconds: 20));
       
-      print('서버 응답 코드: ${serverResponse.statusCode}');
-
-      // 서버가 정상적으로 응답했는지 확인
-      if (serverResponse.statusCode != 200) {
-        throw Exception('서버에서 오류 응답: ${serverResponse.statusCode}');
+      if (response.statusCode != 200) {
+        throw Exception('서버 오류: ${response.statusCode}');
       }
 
-      // 혹시 오류 메시지(XML)가 왔는지 확인
-      String responseText = serverResponse.body;
-      if (responseText.trim().startsWith('<')) {
-        throw Exception('API 키가 잘못되었거나 서비스 점검 중입니다');
+      String responseBody = response.body;
+      if (responseBody.trim().startsWith('<')) {
+        throw Exception('API 키 오류 또는 서비스 점검');
       }
 
-      // JSON 데이터 해석하기
-      var jsonData = json.decode(responseText);
+      // JSON 파싱
+      var data = json.decode(responseBody);
+      String resultCode = data['response']['header']['resultCode'];
       
-      // 응답이 성공적인지 확인
-      String resultCode = jsonData['response']['header']['resultCode'];
       if (resultCode != '00') {
-        String resultMessage = jsonData['response']['header']['resultMsg'];
-        throw Exception('기상청 오류: $resultMessage');
+        String resultMsg = data['response']['header']['resultMsg'];
+        throw Exception('기상청 오류: $resultMsg');
       }
 
-      // 실제 날씨 데이터 목록 가져오기
-      List<dynamic> weatherDataList = jsonData['response']['body']['items']['item'];
-      print('받은 데이터 개수: ${weatherDataList.length}개');
-
-      // 데이터 목록에서 필요한 정보만 뽑아내기
-      Map<String, dynamic> parsedData = findTodayWeatherFromList(weatherDataList, todayDate);
-      
-      // 뽑아낸 정보로 날씨 상자 만들기
+      List<dynamic> items = data['response']['body']['items']['item'];
+      Map<String, dynamic> parsedData = parseWeatherData(items, date);
       WeatherModel newWeather = WeatherModel.fromJson(parsedData);
       
-      // 안전하게 화면 업데이트하기 (setState 오류 방지)
+      // 화면 업데이트
       try {
         setState(() {
-          todayWeather = newWeather;   // 새로운 날씨 정보 저장
-          isDataLoading = false;       // 로딩 완료
+          weather = newWeather;
+          loading = false;
         });
-        print('날씨 정보 업데이트 완료!');
       } catch (e) {
-        // 위젯이 사라져서 setState 실패해도 괜찮음 (정상 상황)
-        print('위젯이 사라져서 화면 업데이트 불가 (정상적인 상황)');
+        // 위젯이 사라진 경우 무시
       }
 
-    } catch (error) {
-      // 오류가 생겼을 때 안전하게 처리
-      print('오류 발생: $error');
-      
-      // 에러 상태 업데이트도 안전하게
+    } catch (e) {
       try {
         setState(() {
-          errorText = '날씨 정보를 가져올 수 없습니다\n인터넷 연결을 확인해주세요';
-          isDataLoading = false;
+          error = '날씨 정보를 가져올 수 없습니다\n인터넷 연결을 확인해주세요';
+          loading = false;
         });
       } catch (e) {
-        // 위젯이 사라져서 setState 실패해도 괜찮음
-        print('위젯이 사라져서 오류 상태 업데이트 불가');
+        // 위젯이 사라진 경우 무시
       }
     }
   }
 
-  // ============ 받은 데이터에서 오늘 날씨만 찾는 함수 ============
-  Map<String, dynamic> findTodayWeatherFromList(List<dynamic> allWeatherData, String todayDate) {
-    
-    // 찾을 정보들을 담을 변수 (처음엔 모두 비어있음)
-    String todayTemperature = '';      // 오늘 기온
-    String todayHumidity = '';         // 오늘 습도  
-    String todayRainChance = '';       // 오늘 강수확률
-    String todaySkyCondition = '';     // 오늘 하늘상태
-    String todayRainType = '';         // 오늘 비/눈 종류
+  // 날씨 데이터 파싱
+  Map<String, dynamic> parseWeatherData(List<dynamic> items, String date) {
+    String temperature = '';
+    String humidity = '';
+    String rainChance = '';
+    String skyCondition = '';
+    String rainType = '';
 
-    // 현재 시간에 맞는 예보 시간 계산 (예: 지금이 18시면 "1800")
-    String currentHourTime = '${DateTime.now().hour.toString().padLeft(2, '0')}00';
-    print('찾을 예보 시간: $currentHourTime');
+    String currentTime = '${DateTime.now().hour.toString().padLeft(2, '0')}00';
 
-    // 받은 모든 데이터를 하나씩 확인하면서 오늘 현재시간 데이터 찾기
-    for (var oneWeatherData in allWeatherData) {
+    // 현재 시간 데이터 찾기
+    for (var item in items) {
+      String itemDate = item['fcstDate'];
+      String itemTime = item['fcstTime'];
       
-      // 오늘 날짜이고 현재 시간에 맞는 데이터인지 확인
-      String dataDate = oneWeatherData['fcstDate'];     // 이 데이터의 날짜
-      String dataTime = oneWeatherData['fcstTime'];     // 이 데이터의 시간
-      
-      if (dataDate == todayDate && dataTime == currentHourTime) {
+      if (itemDate == date && itemTime == currentTime) {
+        String category = item['category'];
+        String value = item['fcstValue'];
         
-        String infoType = oneWeatherData['category'];     // 데이터 종류 (온도, 습도 등)
-        String infoValue = oneWeatherData['fcstValue'];   // 데이터 값
-        
-        // 데이터 종류에 따라 해당 변수에 저장
-        if (infoType == 'TMP') {
-          todayTemperature = infoValue;    // 기온 저장
-        } else if (infoType == 'REH') {
-          todayHumidity = infoValue;       // 습도 저장
-        } else if (infoType == 'POP') {
-          todayRainChance = infoValue;     // 강수확률 저장
-        } else if (infoType == 'SKY') {
-          todaySkyCondition = infoValue;   // 하늘상태 저장 (1:맑음, 3:구름많음, 4:흐림)
-        } else if (infoType == 'PTY') {
-          todayRainType = infoValue;       // 강수형태 저장 (0:없음, 1:비, 2:비/눈, 3:눈)
+        switch (category) {
+          case 'TMP': temperature = value; break;
+          case 'REH': humidity = value; break;
+          case 'POP': rainChance = value; break;
+          case 'SKY': skyCondition = value; break;
+          case 'PTY': rainType = value; break;
         }
       }
     }
 
-    // 만약 현재 시간 데이터가 없다면 오늘의 아무 시간이나 첫 번째 데이터 사용
-    if (todayTemperature.isEmpty) {
-      print('현재 시간 데이터가 없어서 오늘의 다른 시간 데이터 사용');
-      
-      for (var oneWeatherData in allWeatherData) {
-        String dataDate = oneWeatherData['fcstDate'];
+    // 현재 시간 데이터가 없으면 오늘 다른 시간 데이터 사용
+    if (temperature.isEmpty) {
+      for (var item in items) {
+        String itemDate = item['fcstDate'];
         
-        if (dataDate == todayDate) {
+        if (itemDate == date) {
+          String category = item['category'];
+          String value = item['fcstValue'];
           
-          String infoType = oneWeatherData['category'];
-          String infoValue = oneWeatherData['fcstValue'];
-          
-          if (infoType == 'TMP' && todayTemperature.isEmpty) {
-            todayTemperature = infoValue;
-          } else if (infoType == 'REH' && todayHumidity.isEmpty) {
-            todayHumidity = infoValue;
-          } else if (infoType == 'POP' && todayRainChance.isEmpty) {
-            todayRainChance = infoValue;
-          } else if (infoType == 'SKY' && todaySkyCondition.isEmpty) {
-            todaySkyCondition = infoValue;
-          } else if (infoType == 'PTY' && todayRainType.isEmpty) {
-            todayRainType = infoValue;
-          }
+          if (category == 'TMP' && temperature.isEmpty) temperature = value;
+          else if (category == 'REH' && humidity.isEmpty) humidity = value;
+          else if (category == 'POP' && rainChance.isEmpty) rainChance = value;
+          else if (category == 'SKY' && skyCondition.isEmpty) skyCondition = value;
+          else if (category == 'PTY' && rainType.isEmpty) rainType = value;
         }
       }
     }
 
-    print('찾은 오늘 날씨: 온도=$todayTemperature, 습도=$todayHumidity, 강수확률=$todayRainChance');
+    // 기본값 설정
+    if (temperature.isEmpty) temperature = '20';
+    if (humidity.isEmpty) humidity = '50';
+    if (rainChance.isEmpty) rainChance = '0';
+    if (skyCondition.isEmpty) skyCondition = '1';
 
-    // 비어있는 데이터가 있다면 기본값 넣기
-    if (todayTemperature.isEmpty) todayTemperature = '20';
-    if (todayHumidity.isEmpty) todayHumidity = '50';
-    if (todayRainChance.isEmpty) todayRainChance = '0';
-    if (todaySkyCondition.isEmpty) todaySkyCondition = '1';
-
-    // 찾은 정보들을 Map 형태로 정리해서 반환
     return {
-      'condition': makeWeatherText(todayRainType, todaySkyCondition),
-      'temperature': todayTemperature,
-      'humidity': todayHumidity,
-      'rainProbability': todayRainChance,
+      'condition': getWeatherCondition(rainType, skyCondition),
+      'temperature': temperature,
+      'humidity': humidity,
+      'rainProbability': rainChance,
     };
   }
 
-  // ============ 보조 함수들 (간단한 계산) ============
-  
-  // 날짜를 "20250730" 형식으로 만드는 함수
-  String makeDateString(DateTime date) {
-    String year = date.year.toString();                          // 연도
-    String month = date.month.toString().padLeft(2, '0');        // 월 (01, 02, ...)
-    String day = date.day.toString().padLeft(2, '0');            // 일 (01, 02, ...)
+  // 날짜 문자열 생성
+  String getDateString(DateTime date) {
+    String year = date.year.toString();
+    String month = date.month.toString().padLeft(2, '0');
+    String day = date.day.toString().padLeft(2, '0');
     return '$year$month$day';
   }
 
-  // 기상청 발표 시간을 계산하는 함수 (3시간마다 발표)
-  String getBaseTimeString(DateTime now) {
-    int currentHour = now.hour;
+  // 기상청 발표 시간 계산
+  String getBaseTime(DateTime now) {
+    int hour = now.hour;
     
-    if (currentHour >= 23) return '2300';      // 밤 11시 이후
-    else if (currentHour >= 20) return '2000'; // 밤 8시 이후  
-    else if (currentHour >= 17) return '1700'; // 오후 5시 이후
-    else if (currentHour >= 14) return '1400'; // 오후 2시 이후
-    else if (currentHour >= 11) return '1100'; // 오전 11시 이후
-    else if (currentHour >= 8) return '0800';  // 오전 8시 이후
-    else if (currentHour >= 5) return '0500';  // 오전 5시 이후
-    else return '0200';                        // 새벽 2시 이후
+    if (hour >= 23) return '2300';
+    else if (hour >= 20) return '2000';
+    else if (hour >= 17) return '1700';
+    else if (hour >= 14) return '1400';
+    else if (hour >= 11) return '1100';
+    else if (hour >= 8) return '0800';
+    else if (hour >= 5) return '0500';
+    else return '0200';
   }
 
-  // 숫자 코드를 한글 날씨로 바꾸는 함수
-  String makeWeatherText(String rainType, String skyType) {
-    
-    // 먼저 비/눈이 오는지 확인
+  // 날씨 상태 문자열 생성
+  String getWeatherCondition(String rainType, String skyType) {
     if (rainType == '1') return '비';
     else if (rainType == '2') return '비/눈';
     else if (rainType == '3') return '눈';
     else if (rainType == '4') return '소나기';
-    
-    // 비/눈이 없으면 하늘 상태 확인
     else if (skyType == '1') return '맑음';
     else if (skyType == '3') return '구름 많음';
     else if (skyType == '4') return '흐림';
-    else return '맑음';  // 기본값
+    else return '맑음';
   }
 
-  // ============ 화면 그리기 (메인 Container) ============
+  // 날씨 아이콘 반환
+  Widget getWeatherIcon(String condition) {
+    if (condition == '맑음') {
+      return Icon(Icons.wb_sunny, color: Colors.orange, size: 100);
+    } else if (condition == '구름 많음') {
+      return Icon(Icons.wb_cloudy, color: Colors.grey[600], size: 100);
+    } else if (condition == '흐림') {
+      return Icon(Icons.cloud, color: Colors.grey[700], size: 100);
+    } else if (condition == '비' || condition == '소나기') {
+      return Icon(Icons.grain, color: Colors.blue, size: 100);
+    } else if (condition == '눈' || condition == '비/눈') {
+      return Icon(Icons.ac_unit, color: Colors.lightBlue, size: 100);
+    } else {
+      return Icon(Icons.wb_sunny, color: Colors.orange, size: 100);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    
-    // 전체 틀 만들기 (하얀색 둥근 상자)
     return Container(
-      width: 400,   // 가로 크기 고정
-      height: 300,  // 세로 크기 고정
+      width: 400,
+      height: 300,
       decoration: BoxDecoration(
-        color: Colors.white,                         // 배경색: 하얀색
-        borderRadius: BorderRadius.circular(22),     // 모서리 둥글게
-        boxShadow: [                                 // 그림자 효과
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
           BoxShadow(
-            color: Colors.black12, 
-            blurRadius: 10, 
-            offset: Offset(2, 8)
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(2, 8),
           )
         ],
       ),
-      child: SingleChildScrollView(  // 오버플로우 방지용 스크롤 추가
-        padding: EdgeInsets.all(28),  // 안쪽 여백
-        child: showWeatherContent(),  // 실제 내용 보여주기
+      child: SingleChildScrollView(
+        padding: EdgeInsets.all(28),
+        child: buildWeatherContent(),
       ),
     );
   }
 
-  // ============ 상황별 화면 내용 함수 (원래 디자인 유지) ============
-  Widget showWeatherContent() {
-    
-    // 경우 1: 아직 데이터를 불러오는 중
-    if (isDataLoading) {
+  // 날씨 내용 위젯 생성
+  Widget buildWeatherContent() {
+    // 로딩 중
+    if (loading) {
       return Column(
-        mainAxisSize: MainAxisSize.min,  // 오버플로우 방지
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: Colors.orange),  // 돌아가는 로딩 아이콘
+          CircularProgressIndicator(color: Colors.orange),
           SizedBox(height: 16),
           Text('서울 마포구 날씨 정보를 가져오는 중...'),
         ],
       );
     }
 
-    // 경우 2: 오류가 발생했을 때
-    if (errorText != null) {
+    // 오류 발생
+    if (error != null) {
       return Column(
-        mainAxisSize: MainAxisSize.min,  // 오버플로우 방지
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.error_outline, size: 48, color: Colors.red),
           SizedBox(height: 8),
           Text(
-            errorText!,
+            error!,
             style: TextStyle(color: Colors.red),
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () {
-              getWeatherFromInternet(); // 다시 시도 버튼
-            },
+            onPressed: () => loadWeatherData(),
             child: Text('다시 시도'),
           ),
         ],
       );
     }
 
-    // 경우 3: 데이터가 없을 때
-    if (todayWeather == null) {
-      return Center(
-        child: Text('날씨 데이터가 없습니다'),
-      );
+    // 데이터 없음
+    if (weather == null) {
+      return Center(child: Text('날씨 데이터가 없습니다'));
     }
 
-    // 경우 4: 정상적으로 날씨 정보 보여주기 (원래 디자인: 왼쪽 아이콘 + 오른쪽 정보)
-    return IntrinsicHeight(  // 높이 자동 조절 (오버플로우 해결)
+    // 정상 날씨 정보 표시
+    return IntrinsicHeight(
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,  // 세로로 꽉 채우기
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          
           // 날씨 아이콘
           Padding(
-            padding: EdgeInsets.only(right: 40),  // 오른쪽에 40px 간격
-            child: getWeatherIcon(todayWeather!.statusText),
+            padding: EdgeInsets.only(right: 40),
+            child: getWeatherIcon(weather!.statusText),
           ),
           
-          // 날씨 정보 텍스트들
-          Flexible(  // Expanded 대신 Flexible 사용 (오버플로우 방지)
+          // 날씨 정보
+          Flexible(
             child: Column(
-              mainAxisSize: MainAxisSize.min,  // 오버플로우 방지
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                
-                //  날씨 상태 (맑음, 흐림 등)
+                // 날씨 상태
                 Row(
                   children: [
                     SizedBox(width: 12),
-                    Flexible(  // 텍스트 오버플로우 방지
+                    Flexible(
                       child: Text(
-                        todayWeather!.statusText,
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                        overflow: TextOverflow.ellipsis,  // 길면 ... 처리
+                        weather!.statusText,
+                        style: TextStyle(
+                          fontSize: 24, 
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
                 
-                SizedBox(height: 16),  // 고정 간격 (Spacer 대신)
+                SizedBox(height: 16),
                 
-                // 중앙: 온도 (큰 글씨)
+                // 온도
                 Text(
-                  '${todayWeather!.temperature}°C',
+                  '${weather!.temperature}°C',
                   style: TextStyle(
-                    fontSize: 60, 
-                    fontWeight: FontWeight.w700, 
-                    color: Colors.black87
+                    fontSize: 60,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
                   ),
                 ),
                 
-                SizedBox(height: 10),  // 간격
+                SizedBox(height: 10),
                 
-                // 하단: 습도와 강수확률 (원래 레이아웃 유지)
+                // 습도와 강수확률
                 Row(
                   children: [
-                    
-                    // 습도 정보
+                    // 습도
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('습도', style: TextStyle(fontSize: 14, color: Colors.black54)),
-                        Text('${todayWeather!.humidity}%', style: TextStyle(fontSize: 22)),
+                        Text('습도', style: TextStyle(
+                          fontSize: 14, 
+                          color: Colors.black54,
+                        )),
+                        Text('${weather!.humidity}%', style: TextStyle(
+                          fontSize: 22,
+                        )),
                       ],
                     ),
                     
-                    SizedBox(width: 40), // 간격
+                    SizedBox(width: 40),
                     
-                    // 강수확률 정보
+                    // 강수확률
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('강수확률', style: TextStyle(fontSize: 14, color: Colors.black54)),
-                        Text('${todayWeather!.rainProbability}%', style: TextStyle(fontSize: 22)),
+                        Text('강수확률', style: TextStyle(
+                          fontSize: 14, 
+                          color: Colors.black54,
+                        )),
+                        Text('${weather!.rainProbability}%', style: TextStyle(
+                          fontSize: 22,
+                        )),
                       ],
                     ),
                   ],
@@ -421,29 +370,5 @@ class _WeatherInfoState extends State<WeatherInfo> {
         ],
       ),
     );
-  }
-
-  // ============ 날씨 상태에 맞는 아이콘을 보여주는 함수 ============
-  Widget getWeatherIcon(String weatherCondition) {
-    
-    // 날씨 상태별로 다른 아이콘과 색상 반환
-    if (weatherCondition == '맑음') {
-      return Icon(Icons.wb_sunny, color: Colors.orange, size: 100);  // 태양 아이콘
-      
-    } else if (weatherCondition == '구름 많음') {
-      return Icon(Icons.wb_cloudy, color: Colors.grey[600], size: 100);  // 구름 아이콘
-      
-    } else if (weatherCondition == '흐림') {
-      return Icon(Icons.cloud, color: Colors.grey[700], size: 100);  // 흐린 구름 아이콘
-      
-    } else if (weatherCondition == '비' || weatherCondition == '소나기') {
-      return Icon(Icons.grain, color: Colors.blue, size: 100);  // 비 아이콘
-      
-    } else if (weatherCondition == '눈' || weatherCondition == '비/눈') {
-      return Icon(Icons.ac_unit, color: Colors.lightBlue, size: 100);  // 눈 아이콘
-      
-    } else {
-      return Icon(Icons.wb_sunny, color: Colors.orange, size: 100);  // 기본값: 맑음
-    }
   }
 }

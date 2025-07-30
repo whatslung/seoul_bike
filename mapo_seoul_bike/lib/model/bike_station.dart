@@ -1,23 +1,15 @@
 class BikeStation {
-  final String name;
-  final double longitude;
-  final double latitude;
+  String name;        // 대여소 이름
+  double lat;         // 위도 
+  double lng;         // 경도
+  int bikes;          // 자전거 수
+  int racks;          // 거치대 수
 
-  BikeStation(
-    {
+  BikeStation({
     required this.name,
-    required this.longitude,
-    required this.latitude,
-    }
-  );
-
-
-//임의 데이터
-final List<BikeStation> dummyStations = 
-    [
-      BikeStation(name: "망원역 1번출구", longitude: 126.910, latitude: 37.555),
-      BikeStation(name: "합정역 2번출구", longitude: 126.913, latitude: 37.549),
-      BikeStation(name: "홍대입구역 3번출구", longitude: 126.922, latitude: 37.557),
-    ];
-
+    required this.lat,
+    required this.lng,
+    required this.bikes,
+    required this.racks,
+  });
 }
