@@ -8,13 +8,22 @@ import joblib
 import math
 from datetime import datetime
 import holidays
+from fastapi.middleware.cors import CORSMiddleware
+from weather import get_weather_data
+
 
 kr_holidays = holidays.KR()
 
 def is_holiday(date_obj: datetime) -> bool:
     return date_obj in kr_holidays
 app = FastAPI()
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Flutter 웹 개발 중에는 전체 허용
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, '../h5/클러스터3모델.h5')
 DATA1_PATH = os.path.join(BASE_DIR, '../Data/마포버스정류장.csv')
@@ -47,7 +56,7 @@ class staion_info(BaseModel):
     lat: float
     lng : float
 
-# class PrediectInput(BaseModel):
+# class PrediectInput(BaseModel): 
 #     #
 def calculate_discomfort_index(temp_celsius, humidity_percent):
     return 0.81 * temp_celsius + 0.01 * humidity_percent * (0.99 * temp_celsius - 14.3) + 46.3
@@ -94,6 +103,16 @@ async def get_stations():
             "lng": doc.get("경도", 0.0),
         }))
     return results
+
+
+@app.get("/weather")
+def get_weather():
+    try:
+        data = get_weather_data()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 
 @app.post("/sang_predict")
 def predict(data: bikeFeature):

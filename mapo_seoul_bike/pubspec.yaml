@@ -48,7 +48,7 @@ dependencies:
 
   # Flutter Map 지도
   flutter_map: ^8.2.1
-  
+  flutter_map_marker_popup: ^8.0.1 # 마커위에 말풍선처럼 뛰우게해줌
     # 지도를 현위치로옮기기
   latlong2: ^0.9.1
   

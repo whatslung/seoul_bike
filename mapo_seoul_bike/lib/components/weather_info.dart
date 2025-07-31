@@ -11,13 +11,14 @@ class WeatherInfo extends StatefulWidget {
 }
 
 class _WeatherInfoState extends State<WeatherInfo> {
-  final String apiKey = '';  // API 키 입력
-  final String mapoPosX = '59';   // 마포구 X 좌표
-  final String mapoPosY = '125';  // 마포구 Y 좌표
-  
-  WeatherModel? weather;  // 날씨 정보
-  bool loading = true;    // 로딩 상태
-  String? error;          // 오류 메시지
+  final String apiKey =
+      'wJ%2FA%2BkyUgsWg3HW9koLk8OAlMWDTE%2Fx%2Bc%2FxzHNEd1tCBBRcJRuByc3fR5pWljOa84Ra7qrpmvDS7rtuX1B3ayQ%3D%3D'; // API 키 입력
+  final String mapoPosX = '59'; // 마포구 X 좌표
+  final String mapoPosY = '125'; // 마포구 Y 좌표
+
+  WeatherModel? weather; // 날씨 정보
+  bool loading = true; // 로딩 상태
+  String? error; // 오류 메시지
 
   @override
   void initState() {
@@ -41,7 +42,7 @@ class _WeatherInfoState extends State<WeatherInfo> {
       DateTime now = DateTime.now();
       String date = getDateString(now);
       String baseTime = getBaseTime(now);
-      
+
       // API 요청 URL 생성
       Uri url = Uri.https(
         'apis.data.go.kr',
@@ -55,12 +56,12 @@ class _WeatherInfoState extends State<WeatherInfo> {
           'base_time': baseTime,
           'nx': mapoPosX,
           'ny': mapoPosY,
-        }
+        },
       );
-      
+
       // API 호출
       var response = await http.get(url).timeout(Duration(seconds: 20));
-      
+
       if (response.statusCode != 200) {
         throw Exception('서버 오류: ${response.statusCode}');
       }
@@ -73,7 +74,7 @@ class _WeatherInfoState extends State<WeatherInfo> {
       // JSON 파싱
       var data = json.decode(responseBody);
       String resultCode = data['response']['header']['resultCode'];
-      
+
       if (resultCode != '00') {
         String resultMsg = data['response']['header']['resultMsg'];
         throw Exception('기상청 오류: $resultMsg');
@@ -82,7 +83,7 @@ class _WeatherInfoState extends State<WeatherInfo> {
       List<dynamic> items = data['response']['body']['items']['item'];
       Map<String, dynamic> parsedData = parseWeatherData(items, date);
       WeatherModel newWeather = WeatherModel.fromJson(parsedData);
-      
+
       // 화면 업데이트
       try {
         setState(() {
@@ -92,7 +93,6 @@ class _WeatherInfoState extends State<WeatherInfo> {
       } catch (e) {
         // 위젯이 사라진 경우 무시
       }
-
     } catch (e) {
       try {
         setState(() {
@@ -119,17 +119,27 @@ class _WeatherInfoState extends State<WeatherInfo> {
     for (var item in items) {
       String itemDate = item['fcstDate'];
       String itemTime = item['fcstTime'];
-      
+
       if (itemDate == date && itemTime == currentTime) {
         String category = item['category'];
         String value = item['fcstValue'];
-        
+
         switch (category) {
-          case 'TMP': temperature = value; break;
-          case 'REH': humidity = value; break;
-          case 'POP': rainChance = value; break;
-          case 'SKY': skyCondition = value; break;
-          case 'PTY': rainType = value; break;
+          case 'TMP':
+            temperature = value;
+            break;
+          case 'REH':
+            humidity = value;
+            break;
+          case 'POP':
+            rainChance = value;
+            break;
+          case 'SKY':
+            skyCondition = value;
+            break;
+          case 'PTY':
+            rainType = value;
+            break;
         }
       }
     }
@@ -138,16 +148,21 @@ class _WeatherInfoState extends State<WeatherInfo> {
     if (temperature.isEmpty) {
       for (var item in items) {
         String itemDate = item['fcstDate'];
-        
+
         if (itemDate == date) {
           String category = item['category'];
           String value = item['fcstValue'];
-          
-          if (category == 'TMP' && temperature.isEmpty) temperature = value;
-          else if (category == 'REH' && humidity.isEmpty) humidity = value;
-          else if (category == 'POP' && rainChance.isEmpty) rainChance = value;
-          else if (category == 'SKY' && skyCondition.isEmpty) skyCondition = value;
-          else if (category == 'PTY' && rainType.isEmpty) rainType = value;
+
+          if (category == 'TMP' && temperature.isEmpty)
+            temperature = value;
+          else if (category == 'REH' && humidity.isEmpty)
+            humidity = value;
+          else if (category == 'POP' && rainChance.isEmpty)
+            rainChance = value;
+          else if (category == 'SKY' && skyCondition.isEmpty)
+            skyCondition = value;
+          else if (category == 'PTY' && rainType.isEmpty)
+            rainType = value;
         }
       }
     }
@@ -177,27 +192,43 @@ class _WeatherInfoState extends State<WeatherInfo> {
   // 기상청 발표 시간 계산
   String getBaseTime(DateTime now) {
     int hour = now.hour;
-    
-    if (hour >= 23) return '2300';
-    else if (hour >= 20) return '2000';
-    else if (hour >= 17) return '1700';
-    else if (hour >= 14) return '1400';
-    else if (hour >= 11) return '1100';
-    else if (hour >= 8) return '0800';
-    else if (hour >= 5) return '0500';
-    else return '0200';
+
+    if (hour >= 23)
+      return '2300';
+    else if (hour >= 20)
+      return '2000';
+    else if (hour >= 17)
+      return '1700';
+    else if (hour >= 14)
+      return '1400';
+    else if (hour >= 11)
+      return '1100';
+    else if (hour >= 8)
+      return '0800';
+    else if (hour >= 5)
+      return '0500';
+    else
+      return '0200';
   }
 
   // 날씨 상태 문자열 생성
   String getWeatherCondition(String rainType, String skyType) {
-    if (rainType == '1') return '비';
-    else if (rainType == '2') return '비/눈';
-    else if (rainType == '3') return '눈';
-    else if (rainType == '4') return '소나기';
-    else if (skyType == '1') return '맑음';
-    else if (skyType == '3') return '구름 많음';
-    else if (skyType == '4') return '흐림';
-    else return '맑음';
+    if (rainType == '1')
+      return '비';
+    else if (rainType == '2')
+      return '비/눈';
+    else if (rainType == '3')
+      return '눈';
+    else if (rainType == '4')
+      return '소나기';
+    else if (skyType == '1')
+      return '맑음';
+    else if (skyType == '3')
+      return '구름 많음';
+    else if (skyType == '4')
+      return '흐림';
+    else
+      return '맑음';
   }
 
   // 날씨 아이콘 반환
@@ -230,7 +261,7 @@ class _WeatherInfoState extends State<WeatherInfo> {
             color: Colors.black12,
             blurRadius: 10,
             offset: Offset(2, 8),
-          )
+          ),
         ],
       ),
       child: SingleChildScrollView(
@@ -292,7 +323,7 @@ class _WeatherInfoState extends State<WeatherInfo> {
             padding: EdgeInsets.only(right: 40),
             child: getWeatherIcon(weather!.statusText),
           ),
-          
+
           // 날씨 정보
           Flexible(
             child: Column(
@@ -307,7 +338,7 @@ class _WeatherInfoState extends State<WeatherInfo> {
                       child: Text(
                         weather!.statusText,
                         style: TextStyle(
-                          fontSize: 24, 
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -315,9 +346,9 @@ class _WeatherInfoState extends State<WeatherInfo> {
                     ),
                   ],
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // 온도
                 Text(
                   '${weather!.temperature}°C',
@@ -327,9 +358,9 @@ class _WeatherInfoState extends State<WeatherInfo> {
                     color: Colors.black87,
                   ),
                 ),
-                
+
                 SizedBox(height: 10),
-                
+
                 // 습도와 강수확률
                 Row(
                   children: [
@@ -337,29 +368,31 @@ class _WeatherInfoState extends State<WeatherInfo> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('습도', style: TextStyle(
-                          fontSize: 14, 
-                          color: Colors.black54,
-                        )),
-                        Text('${weather!.humidity}%', style: TextStyle(
-                          fontSize: 22,
-                        )),
+                        Text(
+                          '습도',
+                          style: TextStyle(fontSize: 14, color: Colors.black54),
+                        ),
+                        Text(
+                          '${weather!.humidity}%',
+                          style: TextStyle(fontSize: 22),
+                        ),
                       ],
                     ),
-                    
+
                     SizedBox(width: 40),
-                    
+
                     // 강수확률
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('강수확률', style: TextStyle(
-                          fontSize: 14, 
-                          color: Colors.black54,
-                        )),
-                        Text('${weather!.rainProbability}%', style: TextStyle(
-                          fontSize: 22,
-                        )),
+                        Text(
+                          '강수확률',
+                          style: TextStyle(fontSize: 14, color: Colors.black54),
+                        ),
+                        Text(
+                          '${weather!.rainProbability}%',
+                          style: TextStyle(fontSize: 22),
+                        ),
                       ],
                     ),
                   ],
