@@ -26,29 +26,29 @@ class _HomeState extends State<Home> {
         child: AppBar(
           title: Appbartitle(),
           actions: [
-            Flexible(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: SizedBox(
-                  width: 300,
-                  height: 40,
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: '대여소 이름을 입력하세요',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            IconButton(
-              onPressed: () {
-                //
-              },
-              icon: Icon(Icons.search_rounded),
-            ),
+            // Flexible(
+            //   child: Padding(
+            //     padding: const EdgeInsets.symmetric(horizontal: 10),
+            //     child: SizedBox(
+            //       width: 300,
+            //       height: 40,
+            //       child: TextField(
+            //         decoration: InputDecoration(
+            //           hintText: '대여소 이름을 입력하세요',
+            //           border: OutlineInputBorder(
+            //             borderRadius: BorderRadius.circular(24),
+            //           ),
+            //         ),
+            //       ),
+            //     ),
+            //   ),
+            // ),
+            // IconButton(
+            //   onPressed: () {
+            //     //
+            //   },
+            //   icon: Icon(Icons.search_rounded),
+            // ),
             SizedBox(width: 20),
           ],
           backgroundColor: Colors.white,

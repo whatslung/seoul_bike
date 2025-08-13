@@ -289,7 +289,7 @@ class _WeatherInfoState extends State<WeatherInfo> {
         children: [
           // 날씨 아이콘
           Padding(
-            padding: EdgeInsets.only(right: 40),
+            padding: EdgeInsets.only(right: 40, left: 40),
             child: getWeatherIcon(weather!.statusText),
           ),
           

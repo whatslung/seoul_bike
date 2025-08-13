@@ -62,7 +62,7 @@ class _StationInfoState extends State<StationInfo> {
           }
 
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
               children: [
                 Container(
@@ -73,18 +73,18 @@ class _StationInfoState extends State<StationInfo> {
                     shape: BoxShape.circle,
                   ),
                 ),
-                SizedBox(width: 8),
+                SizedBox(width: 20),
                 Expanded(
                   child: Text(
                     station.name,
-                    style: TextStyle(fontSize: 14),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                 ),
-                SizedBox(height: 20,),
+                SizedBox(height: 30,),
                 Text(
                   statusText,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 20,
                     color: statusColor,
                     fontWeight: FontWeight.bold,
                   ),
