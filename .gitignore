@@ -330,3 +330,4 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,flutter,dart,python,firebase,macos
+mapo_seoul_bike/mapo_fast_api/*.pkl
